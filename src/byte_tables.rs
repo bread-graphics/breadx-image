@@ -1,10 +1,14 @@
 // MIT/Apache2 License
 
+//! Precomputed byte tables to speed up certain operations.
+
 /// Reverse a slice of bytes in place.
-/// 
+///
 /// This reversed the bits of all of the given bytes.
 pub(crate) fn reverse_bytes(bytes: &mut [u8]) {
-    bytes.iter_mut().for_each(|b| *b = REVERSED_BYTES[*b as usize]);
+    bytes
+        .iter_mut()
+        .for_each(|b| *b = REVERSED_BYTES[*b as usize]);
 }
 
 /// Get the `n` lowest bits of the `u32`.
@@ -13,7 +17,7 @@ pub(crate) fn low_bits(n: u32, bits: usize) -> u32 {
 }
 
 /// An array of bytes whose bits are reversed.
-/// 
+///
 /// The byte at index `i` is equivalent to `i` with its bits reversed.
 const REVERSED_BYTES: [u8; 256] = {
     let mut reversed_bytes = [0u8; 256];

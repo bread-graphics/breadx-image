@@ -18,11 +18,6 @@ impl<T: AsRef<[u8]> + ?Sized> Bitfield<T> {
 
         (byte & bit) != 0
     }
-
-    /// Get the length of this bitfield.
-    pub(crate) fn len(&self) -> usize {
-        self.0.as_ref().len() * 8
-    }
 }
 
 impl<T: AsRef<[u8]> + AsMut<[u8]> + ?Sized> Bitfield<T> {
@@ -36,17 +31,6 @@ impl<T: AsRef<[u8]> + AsMut<[u8]> + ?Sized> Bitfield<T> {
             *byte |= bit;
         } else {
             *byte &= !bit;
-        }
-    }
-
-    /// XOR the bit at the given position with the given value.
-    pub(crate) fn xor_bit(&mut self, index: usize, val: bool) {
-        let (byte_index, bit_index) = bb_index(index);
-        let byte = self.0.as_mut().get_mut(byte_index).expect("out of range");
-        let bit = 1 << bit_index;
-
-        if val {
-            *byte ^= bit;
         }
     }
 
@@ -106,51 +90,6 @@ impl<T: AsRef<[u8]> + AsMut<[u8]> + ?Sized> Bitfield<T> {
             self.set_bit(self_index, other.bit(other_index));
         }
     }
-
-    /// Swap two bits in the value.
-    pub(crate) fn swap_bits(&mut self, index1: usize, index2: usize) {
-        if index1 == index2 {
-            return;
-        }
-
-        let bit1 = self.bit(index1);
-        let bit2 = self.bit(index2);
-
-        // xor the two bits
-        let xor_bit = bit1 ^ bit2;
-
-        // set the bits
-        self.xor_bit(index1, xor_bit);
-        self.xor_bit(index2, xor_bit);
-    }
-
-    /// Swap an entire range of bits.
-    ///
-    /// It is assumed that the ranges do not overlap.
-    pub(crate) fn swap_range(&mut self, start1: usize, start2: usize, len: usize) {
-        // assert that the two ranges do not overlap
-        assert!(start1 + len <= start2);
-
-        for i in 0..len {
-            let index1 = start1 + i;
-            let index2 = start2 + i;
-
-            self.swap_bits(index1, index2);
-        }
-    }
-
-    /// Swap all bits in the given range so that the bits are in MSB order.
-    pub(crate) fn msbify(&mut self, start: usize, len: usize) {
-        // TODO: this function uses a very naive implementation
-        // could be sped up significantly
-        let end = start + len;
-
-        for i in 0..len / 2 {
-            let index = end - i - 1;
-
-            self.swap_bits(start + i, index);
-        }
-    }
 }
 
 /// Given an index into this bitfield's bits, get the index of
@@ -178,7 +117,6 @@ fn distance_to_byte_boundary(index: usize) -> usize {
 #[cfg(test)]
 mod test {
     use super::Bitfield;
-    use core::cmp;
 
     #[test]
     fn get_bit() {
@@ -234,115 +172,38 @@ mod test {
 
     #[test]
     fn copy_from() {
-        let number1 = fastrand::u64(..);
-        let number2 = fastrand::u64(..);
+        for max_len in [62, 6] {
+            let number1 = fastrand::u64(..);
+            let number2 = fastrand::u64(..);
 
-        let mut bits1 = [false; 64];
-        let mut bits2 = [false; 64];
+            let mut bits1 = [false; 64];
+            let mut bits2 = [false; 64];
 
-        for i in 0..64 {
-            bits1[i] = (number1 & (1 << i)) != 0;
-            bits2[i] = (number2 & (1 << i)) != 0;
-        }
-
-        // copy some random amount of bytes from number2 to number1
-        let n1start = fastrand::usize(0..63);
-        let n2start = fastrand::usize(0..63);
-        let len = fastrand::usize(0..cmp::min(62 - n1start, 62 - n2start));
-
-        let mut bitfield1 = Bitfield(number1.to_le_bytes());
-        let bitfield2 = Bitfield(number2.to_le_bytes());
-
-        // copy range
-        bitfield1.copy_from(&bitfield2, n1start, n2start, len);
-
-        // check
-        let modrange = n1start..n1start + len;
-        for i in 0..64 {
-            if modrange.contains(&i) {
-                assert_eq!(bits2[n2start + (i - n1start)], bitfield1.bit(i));
-            } else {
-                assert_eq!(bits1[i], bitfield1.bit(i));
+            for i in 0..64 {
+                bits1[i] = (number1 & (1 << i)) != 0;
+                bits2[i] = (number2 & (1 << i)) != 0;
             }
-        }
-    }
 
-    #[test]
-    fn swap_bits() {
-        let number1 = fastrand::u64(..);
-        let mut bits = [false; 64];
+            // copy some random amount of bytes from number2 to number1
+            let len = fastrand::usize(1..max_len);
+            let n1start = fastrand::usize(0..62 - len);
+            let n2start = fastrand::usize(0..62 - len);
 
-        // take two indices to swap around
-        let mut index1;
-        let mut index2;
-        loop {
-            index1 = fastrand::usize(0..64);
-            index2 = fastrand::usize(0..64);
-            if index1 != index2 {
-                break;
+            let mut bitfield1 = Bitfield(number1.to_le_bytes());
+            let bitfield2 = Bitfield(number2.to_le_bytes());
+
+            // copy range
+            bitfield1.copy_from(&bitfield2, n1start, n2start, len);
+
+            // check
+            let modrange = n1start..n1start + len;
+            for i in 0..64 {
+                if modrange.contains(&i) {
+                    assert_eq!(bits2[n2start + (i - n1start)], bitfield1.bit(i));
+                } else {
+                    assert_eq!(bits1[i], bitfield1.bit(i));
+                }
             }
-        }
-
-        for i in 0..64 {
-            bits[i] = (number1 & (1 << i)) != 0;
-        }
-
-        bits.swap(index1, index2);
-
-        // use the bitfield
-        let mut bitfield = Bitfield(number1.to_le_bytes());
-        bitfield.swap_bits(index1, index2);
-
-        for i in 0..64 {
-            assert_eq!(bits[i], bitfield.bit(i));
-        }
-    }
-
-    #[test]
-    fn swap_range() {
-        let number = fastrand::u64(..);
-        let mut bits = [false; 64];
-
-        // generate two ranges to swap
-        let len = fastrand::usize(1..31);
-        let start1 = fastrand::usize(0..32 - len);
-        let start2 = fastrand::usize(32..64 - len);
-
-        for i in 0..64 {
-            bits[i] = (number & (1 << i)) != 0;
-        }
-
-        for i in 0..len {
-            let index1 = start1 + i;
-            let index2 = start2 + i;
-            bits.swap(index1, index2);
-        }
-
-        // use the bitfield
-        let mut bitfield = Bitfield(number.to_le_bytes());
-        bitfield.swap_range(start1, start2, len);
-
-        for i in 0..64 {
-            assert_eq!(bits[i], bitfield.bit(i));
-        }
-    }
-
-    #[test]
-    fn msbify() {
-        let number = fastrand::u64(..);
-        let mut bits = [false; 64];
-
-        for i in 0..64 {
-            bits[i] = (number & (1 << i)) != 0;
-        }
-
-        bits.reverse();
-
-        let mut bitfield = Bitfield(number.to_le_bytes());
-        bitfield.msbify(0, 64);
-
-        for i in 0..64 {
-            assert_eq!(bits[i], bitfield.bit(i));
         }
     }
 }

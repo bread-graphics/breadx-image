@@ -14,6 +14,11 @@ tracing = { version = "0.1.34", default-features = false }
 criterion = "0.3.5"
 fastrand = "1.7.0"
 
+[features]
+default = ["std"]
+std = ["breadx/std"]
+async = ["breadx/async"]
+
 [[bench]]
-name = "encode_decode"
+name = "benchmarks"
 harness = false

@@ -3,7 +3,7 @@
 //! Benchmark encoding/decoding an image.
 
 use breadx::protocol::xproto::{ImageFormat, ImageOrder};
-use breadx_image::Image;
+use breadx_image::{Image, Format, BitsPerPixel, XyFormatType};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 // create a rather large image
@@ -18,15 +18,26 @@ fn encode(c: &mut Criterion) {
     let mut group = c.benchmark_group("encode");
     for byte_order in [ImageOrder::LSB_FIRST, ImageOrder::MSB_FIRST] {
         for image_format in [ImageFormat::XY_PIXMAP, ImageFormat::Z_PIXMAP] {
+            let format = match image_format {
+                ImageFormat::Z_PIXMAP => Format::Z {
+                    depth: TEST_DEPTH as _,
+                    bits_per_pixel: BitsPerPixel::roundup_from_depth(TEST_DEPTH as _),
+                },
+                _ => Format::Xy {
+                    format: XyFormatType::Pixmap { depth: TEST_DEPTH as _ },
+                    quantum: breadx_image::Quantum::ThirtyTwo,
+                    bit_order: byte_order,
+                    left_pad: 0,
+                }
+            };
+
             let mut image = Image::new(
                 &mut storage,
                 TEST_WIDTH as _,
                 TEST_HEIGHT as _,
-                image_format,
-                TEST_DEPTH as _,
+                format,
                 byte_order,
-                TEST_DEPTH as _,
-                0,
+                32
             );
 
             let name = format!("{:?} {:?}", byte_order, image_format);
@@ -50,13 +61,26 @@ fn decode(c: &mut Criterion) {
     let mut group = c.benchmark_group("decode");
     for byte_order in [ImageOrder::LSB_FIRST, ImageOrder::MSB_FIRST] {
         for image_format in [ImageFormat::XY_PIXMAP, ImageFormat::Z_PIXMAP] {
+            let format = match image_format {
+                ImageFormat::Z_PIXMAP => Format::Z {
+                    depth: TEST_DEPTH as _,
+                    bits_per_pixel: BitsPerPixel::roundup_from_depth(TEST_DEPTH as _),
+                },
+                _ => Format::Xy {
+                    format: XyFormatType::Pixmap { depth: TEST_DEPTH as _ },
+                    quantum: breadx_image::Quantum::ThirtyTwo,
+                    bit_order: byte_order,
+                    left_pad: 0,
+                }
+            };
+
             let mut image = Image::new(
                 &mut storage,
                 TEST_WIDTH as _,
                 TEST_HEIGHT as _,
-                image_format,
-                TEST_DEPTH as _,
+                format,
                 byte_order,
+                32,
             );
 
             // encode a series of numbers into it
