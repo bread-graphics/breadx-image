@@ -1,6 +1,8 @@
 // MIT/Apache2 License
 
 //! A library for dealing with the X11 image format.
+//! 
+//! The X11 image format is the format of images accepted by the X11 server.
 
 #![no_std]
 
