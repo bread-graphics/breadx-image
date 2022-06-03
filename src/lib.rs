@@ -695,6 +695,10 @@ impl<Storage: AsRef<[u8]> + ?Sized> Image<Storage> {
     ) -> PutImageRequest<'_> {
         let drawable = drawable.into();
         let gc = gc.into();
+        let mut total_len = self.bytes_per_scanline() * self.height();
+        if matches!(self.format(), Format::Xy { .. }) {
+            total_len *= self.depth() as usize;
+        }
 
         PutImageRequest {
             format: self.image_format.format(),
@@ -709,7 +713,7 @@ impl<Storage: AsRef<[u8]> + ?Sized> Image<Storage> {
                 _ => 0,
             },
             depth: self.depth(),
-            data: self.storage.as_ref().into(),
+            data: self.storage.as_ref()[..total_len].into(),
         }
     }
 
@@ -1039,7 +1043,7 @@ mod tests {
 }
 
 pub mod prelude {
-    pub use crate::DisplayExt;
     #[cfg(feature = "async")]
     pub use crate::AsyncDisplayExt;
+    pub use crate::DisplayExt;
 }
