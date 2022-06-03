@@ -3,7 +3,7 @@
 //! Benchmark encoding/decoding an image.
 
 use breadx::protocol::xproto::{ImageFormat, ImageOrder};
-use breadx_image::{Image, Format, BitsPerPixel, XyFormatType};
+use breadx_image::{BitsPerPixel, Format, Image, XyFormatType};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 // create a rather large image
@@ -24,11 +24,13 @@ fn encode(c: &mut Criterion) {
                     bits_per_pixel: BitsPerPixel::roundup_from_depth(TEST_DEPTH as _),
                 },
                 _ => Format::Xy {
-                    format: XyFormatType::Pixmap { depth: TEST_DEPTH as _ },
+                    format: XyFormatType::Pixmap {
+                        depth: TEST_DEPTH as _,
+                    },
                     quantum: breadx_image::Quantum::ThirtyTwo,
                     bit_order: byte_order,
                     left_pad: 0,
-                }
+                },
             };
 
             let mut image = Image::new(
@@ -37,7 +39,7 @@ fn encode(c: &mut Criterion) {
                 TEST_HEIGHT as _,
                 format,
                 byte_order,
-                32
+                32,
             );
 
             let name = format!("{:?} {:?}", byte_order, image_format);
@@ -67,11 +69,13 @@ fn decode(c: &mut Criterion) {
                     bits_per_pixel: BitsPerPixel::roundup_from_depth(TEST_DEPTH as _),
                 },
                 _ => Format::Xy {
-                    format: XyFormatType::Pixmap { depth: TEST_DEPTH as _ },
+                    format: XyFormatType::Pixmap {
+                        depth: TEST_DEPTH as _,
+                    },
                     quantum: breadx_image::Quantum::ThirtyTwo,
                     bit_order: byte_order,
                     left_pad: 0,
-                }
+                },
             };
 
             let mut image = Image::new(

@@ -1,7 +1,10 @@
 // MIT/Apache2 License
 
 use super::Image;
-use breadx::{display::{from_void_request, RawRequest}, protocol::xproto::{Drawable, Gcontext}};
+use breadx::{
+    display::{from_void_request, RawRequest},
+    protocol::xproto::{Drawable, Gcontext},
+};
 
 impl<Storage: AsRef<[u8]> + ?Sized> Image<Storage> {
     /// Get a `PutImageRequest` that could be used to send a part of this

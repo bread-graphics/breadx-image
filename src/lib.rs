@@ -1,7 +1,7 @@
 // MIT/Apache2 License
 
 //! A library for dealing with the X11 image format.
-//! 
+//!
 //! The X11 image format is the format of images accepted by the X11 server.
 
 #![no_std]
@@ -11,7 +11,7 @@ extern crate alloc;
 extern crate std;
 
 mod bits;
-use alloc::{vec, vec::Vec, boxed::Box};
+use alloc::{vec, vec::Vec};
 use bits::Bitfield;
 
 mod byte_tables;
@@ -20,10 +20,13 @@ use byte_tables::{low_bits, reverse_bytes};
 mod ext;
 pub use ext::DisplayExt;
 
+#[cfg(feature = "async")]
+pub use ext::AsyncDisplayExt;
+
 mod subimage;
 
-use breadx::{
-    protocol::xproto::{ImageFormat, ImageOrder, PutImageRequest, Drawable, Gcontext, GetImageReply, Setup},
+use breadx::protocol::xproto::{
+    Drawable, Gcontext, GetImageReply, ImageFormat, ImageOrder, PutImageRequest, Setup,
 };
 use core::{
     convert::{TryFrom, TryInto},
@@ -404,15 +407,22 @@ impl<Storage: AsRef<[u8]>> Image<Storage> {
     pub fn into_storage(self) -> Storage {
         self.storage
     }
-    
+
     /// Map the storage for this image.
-    /// 
+    ///
     /// This function assumes that nothing else about the image is changed.
     pub fn map_storage<R, F>(self, f: F) -> Image<R>
     where
         F: FnOnce(Storage) -> R,
     {
-        let Self { width, height, image_format, byte_order, scanline_pad, storage } = self;
+        let Self {
+            width,
+            height,
+            image_format,
+            byte_order,
+            scanline_pad,
+            storage,
+        } = self;
 
         Image {
             width,
@@ -507,7 +517,10 @@ impl<Storage: ?Sized> Image<Storage> {
                 ref quantum,
                 ..
             } => (*bit_order, *quantum),
-            Format::Z { .. } => (self.byte_order, Quantum::try_from(self.scanline_pad).unwrap()),
+            Format::Z { .. } => (
+                self.byte_order,
+                Quantum::try_from(self.scanline_pad).unwrap(),
+            ),
         };
 
         if matches!(
@@ -587,12 +600,12 @@ impl<Storage: ?Sized> Image<Storage> {
 
 impl<Storage: AsRef<[u8]> + ?Sized> Image<Storage> {
     pub fn borrow(&self) -> Image<&[u8]> {
-        Image { 
+        Image {
             width: self.width,
-            height: self.height, 
-            image_format: self.image_format, 
-            byte_order: self.byte_order, 
-            scanline_pad: self.scanline_pad, 
+            height: self.height,
+            image_format: self.image_format,
+            byte_order: self.byte_order,
+            scanline_pad: self.scanline_pad,
             storage: self.storage.as_ref(),
         }
     }
@@ -701,26 +714,29 @@ impl<Storage: AsRef<[u8]> + ?Sized> Image<Storage> {
     }
 
     /// Crop this image down to the given dimensions.
-    /// 
+    ///
     /// ## Performance
-    /// 
+    ///
     /// This function creates a new image and then manually copies all of the
     /// pixels from this image to that one, using the `pixel` and `set_pixel`
     /// functions. This usually leads to poor performance.
-    pub fn crop(
-        &self,
-        x: usize,
-        y: usize,
-        width: usize,
-        height: usize,
-    ) -> Image<Box<[u8]>> {
+    pub fn crop(&self, x: usize, y: usize, width: usize, height: usize) -> Image<Vec<u8>> {
         // create a new empty image
         let bpp = match self.image_format {
             Format::Xy { .. } => None,
-            Format::Z { ref bits_per_pixel, .. } => Some(*bits_per_pixel),
+            Format::Z {
+                ref bits_per_pixel, ..
+            } => Some(*bits_per_pixel),
         };
-        let len = storage_bytes(width as _, height as _, self.depth(), bpp, self.format().format(), self.scanline_pad);
-        let storage = vec![0u8; len].into_boxed_slice();
+        let len = storage_bytes(
+            width as _,
+            height as _,
+            self.depth(),
+            bpp,
+            self.format().format(),
+            self.scanline_pad,
+        );
+        let storage = vec![0u8; len];
         let mut image = Image::new(
             storage,
             width as _,
@@ -833,9 +849,15 @@ impl<Storage: AsMut<[u8]> + ?Sized> Image<Storage> {
 
 impl Image<Vec<u8>> {
     /// Create a new image based on a [`GetImageReply`].
-    /// 
+    ///
     /// [`GetImageReply`]: breadx::protocol::xproto::GetImageReply
-    pub fn from_get_image_reply(reply: GetImageReply, width: u16, height: u16, format: ImageFormat, setup: &Setup) -> breadx::Result<Self> {
+    pub fn from_get_image_reply(
+        reply: GetImageReply,
+        width: u16,
+        height: u16,
+        format: ImageFormat,
+        setup: &Setup,
+    ) -> breadx::Result<Self> {
         let GetImageReply { depth, data, .. } = reply;
 
         Self::with_display(data, width, height, format, depth, setup)
@@ -1014,4 +1036,10 @@ mod tests {
             }
         }
     }
+}
+
+pub mod prelude {
+    pub use crate::DisplayExt;
+    #[cfg(feature = "async")]
+    pub use crate::AsyncDisplayExt;
 }
