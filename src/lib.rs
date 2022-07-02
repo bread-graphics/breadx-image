@@ -1,10 +1,17 @@
-// MIT/Apache2 License
+//               Copyright John Nunley, 2022.
+// Distributed under the Boost Software License, Version 1.0.
+//       (See accompanying file LICENSE or copy at
+//         https://www.boost.org/LICENSE_1_0.txt)
 
 //! A library for dealing with the X11 image format.
 //!
-//! The X11 image format is the format of images accepted by the X11 server.
+//! The X11 image format is the format of images accepted by the X11 
+//! server. It is relatively tricky to manipulate; this crate exists
+//! to provide generic types to make manipulating and sending images
+//! significantly easier.
 
 #![no_std]
+#![forbid(unsafe_code, future_incompatible, rust_2018_idioms)]
 
 extern crate alloc;
 #[cfg(feature = "std")]

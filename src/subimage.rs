@@ -1,4 +1,7 @@
-// MIT/Apache2 License
+//               Copyright John Nunley, 2022.
+// Distributed under the Boost Software License, Version 1.0.
+//       (See accompanying file LICENSE or copy at
+//         https://www.boost.org/LICENSE_1_0.txt)
 
 use super::Image;
 use breadx::{
@@ -20,6 +23,7 @@ impl<Storage: AsRef<[u8]> + ?Sized> Image<Storage> {
         height: usize,
         dst_x: i16,
         dst_y: i16,
+        discard_reply: bool,
         raw_request_handler: impl FnOnce(RawRequest<'_, '_>) -> R,
     ) -> R {
         let drawable = drawable.into();
@@ -29,7 +33,7 @@ impl<Storage: AsRef<[u8]> + ?Sized> Image<Storage> {
         // then this degenerates into a put_image_request() call
         if (src_x, src_y, width, height) == (0, 0, self.width as usize, self.height as usize) {
             let pir = self.put_image_request(drawable, gc, dst_x, dst_y);
-            return from_void_request(pir, raw_request_handler);
+            return from_void_request(pir, discard_reply, raw_request_handler);
         }
 
         // optimized case: if we are a ZPixmap image, and the first pixel of each row of a theoretical
@@ -43,6 +47,6 @@ impl<Storage: AsRef<[u8]> + ?Sized> Image<Storage> {
         // crop() then put_image_request()
         let cropped = self.crop(src_x, src_y, width, height);
         let pir = cropped.put_image_request(drawable, gc, dst_x, dst_y);
-        from_void_request(pir, raw_request_handler)
+        from_void_request(pir, discard_reply, raw_request_handler)
     }
 }

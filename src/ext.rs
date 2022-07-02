@@ -1,4 +1,7 @@
-// MIT/Apache2 License
+//               Copyright John Nunley, 2022.
+// Distributed under the Boost Software License, Version 1.0.
+//       (See accompanying file LICENSE or copy at
+//         https://www.boost.org/LICENSE_1_0.txt)
 
 #![allow(clippy::too_many_arguments)]
 
@@ -27,7 +30,7 @@ pub trait DisplayExt: Display {
         dst_y: i16,
     ) -> breadx::Result<Cookie<()>> {
         let req = image.put_image_request(drawable, gc, dst_x, dst_y);
-        self.send_void_request(req)
+        self.send_void_request(req, true)
     }
 
     fn put_ximage_checked(
@@ -64,6 +67,7 @@ pub trait DisplayExt: Display {
             height,
             dst_x,
             dst_y,
+            true,
             |req| self.send_request_raw(req).map(Cookie::from_sequence),
         )
     }
@@ -116,7 +120,7 @@ pub trait AsyncDisplayExt: AsyncDisplay {
         dst_y: i16,
     ) -> futures::SendRequest<'_, Self, ()> {
         let req = image.put_image_request(drawable, gc, dst_x, dst_y);
-        self.send_void_request(req)
+        self.send_void_request(req, true)
     }
 
     fn put_ximage_checked(
@@ -153,7 +157,8 @@ pub trait AsyncDisplayExt: AsyncDisplay {
             height,
             dst_x,
             dst_y,
-            |req| self.send_request_raw(req),
+            true,
+            move |req| self.send_request_raw(req),
         )
     }
 }

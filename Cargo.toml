@@ -1,12 +1,20 @@
+#               Copyright John Nunley, 2022.
+# Distributed under the Boost Software License, Version 1.0.
+#       (See accompanying file LICENSE or copy at
+#         https://www.boost.org/LICENSE_1_0.txt)
+
 [package]
 name = "breadx-image"
 version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition = "2018"
+authors = ["notgull <jtnunley01@gmail.com>"]
+description = "Image type to be used in breadx"
+license = "BSL-1.0"
+homepage = "https://github.com/bread-graphics/breadx-image#readme"
+repository = "https://github.com/bread-graphics/breadx-image"
 
 [dependencies]
-breadx = { path = "../breadx/breadx", default-features = false }
+breadx = { version = "3", default-features = false }
 bytemuck = "1.9.1"
 tracing = { version = "0.1.34", default-features = false }
 
