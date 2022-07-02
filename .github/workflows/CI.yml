@@ -86,7 +86,7 @@ jobs:
         run: cargo test --features async
 
       - name: No Default Features Build
-        run: cargo test --no-default-features
+        run: cargo build --no-default-features
 
   build-msrv:
     name: Build MSRV

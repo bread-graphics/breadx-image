@@ -32,3 +32,6 @@ async = ["breadx/async"]
 [[bench]]
 name = "benchmarks"
 harness = false
+
+[package.metadata.docs.rs]
+all-features = true
