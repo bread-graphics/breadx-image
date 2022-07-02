@@ -5,7 +5,7 @@
 
 //! A library for dealing with the X11 image format.
 //!
-//! The X11 image format is the format of images accepted by the X11 
+//! The X11 image format is the format of images accepted by the X11
 //! server. It is relatively tricky to manipulate; this crate exists
 //! to provide generic types to make manipulating and sending images
 //! significantly easier.

@@ -97,17 +97,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .foreground(conn.default_screen().black_pixel)
             .graphics_exposures(0),
     )?;
-    conn.put_subimage_checked(
-        &ximage,
-        pixmap,
-        pixmap_gc,
-        50,
-        50,
-        50,
-        50,
-        0,
-        0
-    )?;
+    conn.put_subimage_checked(&ximage, pixmap, pixmap_gc, 50, 50, 50, 50, 0, 0)?;
 
     // now, let's enter the main loop
     let wm_protocols = conn.intern_atom(false, "WM_PROTOCOLS")?;
@@ -132,17 +122,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Event::Expose(_) => {
                 // repaint by copying the area from the pixmap
                 // to the window
-                conn.copy_area_checked(
-                    pixmap,
-                    wid,
-                    window_gc,
-                    0,
-                    0,
-                    0,
-                    0,
-                    50,
-                    50,
-                )?;
+                conn.copy_area_checked(pixmap, wid, window_gc, 0, 0, 0, 0, 50, 50)?;
             }
             Event::ClientMessage(cme) => {
                 if cme.data.as_data32()[0] == wm_delete_window {

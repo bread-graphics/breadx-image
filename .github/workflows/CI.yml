@@ -85,3 +85,28 @@ jobs:
       # run tests with async
       - name: Async Test
         run: cargo test --features async
+
+      - name: No Default Features Build
+        run: cargo test --no-default-features
+
+  build-msrv:
+    name: Build MSRV
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.49.0
+          override: true
+      - uses: Swatinem/rust-cache@v1
+
+      # run tests for all crates
+      - name: Default Features Build
+        run: cargo build
+      - name: Async Build
+        run: cargo build --features async
+      - name: No Default Features Build
+        run: cargo build --no-default-features
